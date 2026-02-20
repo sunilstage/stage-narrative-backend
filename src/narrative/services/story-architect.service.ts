@@ -266,13 +266,18 @@ RETURN AS JSON
 Be thorough, strategic, and conflict-obsessed. The primary conflict you identify will guide ALL marketing narratives.
 `;
 
+    console.log('🎭 [ARCHITECT] Starting deep content analysis...');
+
     const response = await this.anthropicService.createMessage({
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 6000,
+      timeoutMs: 120000, // 2 minute timeout for content analysis
     });
 
+    console.log('✅ [ARCHITECT] Content analysis complete, parsing...');
     const analysis: ContentAnalysis =
       this.anthropicService.parseJSONResponse<ContentAnalysis>(response);
+    console.log(`🎯 [ARCHITECT] Found ${analysis.conflicts_identified?.length || 0} conflicts`);
 
     // Add convenience fields
     analysis.main_conflict = analysis.primary_conflict?.statement || '';
@@ -304,6 +309,7 @@ Keep it under 30 words, clear and punchy.
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 200,
       temperature: 0.5,
+      timeoutMs: 60000, // 1 minute timeout
     });
 
     const firstContent = response.content[0];
@@ -343,6 +349,7 @@ Return JSON:
     const response = await this.anthropicService.createMessage({
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 300,
+      timeoutMs: 60000, // 1 minute timeout
     });
 
     return this.anthropicService.parseJSONResponse<{

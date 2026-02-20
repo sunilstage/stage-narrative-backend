@@ -63,21 +63,35 @@ export class AnthropicService {
   }
 
   /**
-   * Create a message using Claude API
+   * Create a message using Claude API with timeout
    */
   async createMessage(params: {
     messages: Array<{ role: 'user' | 'assistant'; content: string }>;
     max_tokens?: number;
     temperature?: number;
     system?: string;
+    timeoutMs?: number;
   }): Promise<any> {
+    console.log('🤖 [ANTHROPIC] Calling Claude API...');
     this.logger.log('🤖 Calling Claude API...');
     this.logger.debug(`System prompt length: ${params.system?.length || 0} chars`);
     this.logger.debug(`User prompt length: ${params.messages[0]?.content?.length || 0} chars`);
     this.logger.debug(`Options: max_tokens=${params.max_tokens || 4000}, temperature=${params.temperature || 0.7}`);
 
     try {
-      const response = await this.callWithRetry(() =>
+      const timeout = params.timeoutMs || 180000; // Default 3 minutes
+      console.log(`⏱️ [ANTHROPIC] Timeout set to ${timeout}ms`);
+
+      // Create timeout promise
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Claude API call timed out after ${timeout}ms`)),
+          timeout,
+        ),
+      );
+
+      // Create API call promise
+      const apiPromise = this.callWithRetry(() =>
         this.client.messages.create({
           model: this.model,
           max_tokens: params.max_tokens || 4000,
@@ -87,14 +101,19 @@ export class AnthropicService {
         }),
       );
 
+      // Race between API call and timeout
+      const response = await Promise.race([apiPromise, timeoutPromise]);
+
+      console.log('✅ [ANTHROPIC] Claude API response received');
       this.logger.log('✅ Claude API response received');
-      const firstContent = response.content[0];
+      const firstContent = (response as any).content[0];
       const textLength = firstContent && 'text' in firstContent ? firstContent.text?.length || 0 : 0;
       this.logger.debug(`Response length: ${textLength} chars`);
-      this.logger.debug(`Usage: input=${response.usage?.input_tokens}, output=${response.usage?.output_tokens}`);
+      this.logger.debug(`Usage: input=${(response as any).usage?.input_tokens}, output=${(response as any).usage?.output_tokens}`);
 
       return response;
     } catch (error) {
+      console.error(`❌ [ANTHROPIC] Claude API call failed: ${error.message}`);
       this.logger.error(`❌ Claude API call failed: ${error.message}`, error.stack);
       throw new Error(`Failed to call Claude API: ${error.message}`);
     }

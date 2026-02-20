@@ -250,21 +250,60 @@ export class NarrativeService {
         : undefined;
 
       // Update progress: Brainstorming
+      console.log('🏗️ [GENERATION] Running Production Council...');
       this.logger.log('🏗️ Running Production Council...');
       session.progress = 30;
+      session.metadata = {
+        ...session.metadata,
+        last_step: 'production_council_start',
+        last_update: new Date().toISOString(),
+      };
       await session.save();
+      console.log('✅ [GENERATION] Progress saved at 30%');
 
-      // Run evaluation engine
-      const [evaluations, brainstormResult, contentAnalysis] =
-        await this.productionCouncil.evaluateAllCandidatesDeliberative(
-          contentInfo,
-          10, // Generate 10 candidates
-          roundContext,
-          stakeholderContext,
-          content.content_analysis, // Pass existing analysis if available
-        );
+      // Run evaluation engine with detailed error tracking
+      console.log('📞 [GENERATION] Calling evaluateAllCandidatesDeliberative...');
+      let evaluations: any[];
+      let brainstormResult: any;
+      let contentAnalysis: any;
 
-      this.logger.log(`✅ Narratives created: ${evaluations.length} narratives`);
+      try {
+        [evaluations, brainstormResult, contentAnalysis] =
+          await this.productionCouncil.evaluateAllCandidatesDeliberative(
+            contentInfo,
+            10, // Generate 10 candidates
+            roundContext,
+            stakeholderContext,
+            content.content_analysis, // Pass existing analysis if available
+          );
+
+        console.log(`✅ [GENERATION] Narratives created: ${evaluations.length} narratives`);
+        this.logger.log(`✅ Narratives created: ${evaluations.length} narratives`);
+
+        // Update session with success
+        session.metadata = {
+          ...session.metadata,
+          last_step: 'production_council_complete',
+          narratives_count: evaluations.length,
+          last_update: new Date().toISOString(),
+        };
+        await session.save();
+      } catch (councilError) {
+        console.error('❌ [GENERATION] Production council failed:', councilError);
+        this.logger.error(`Production council error: ${councilError.message}`, councilError.stack);
+
+        // Update session with detailed error
+        session.metadata = {
+          ...session.metadata,
+          last_step: 'production_council_error',
+          error_message: councilError.message,
+          error_stack: councilError.stack?.substring(0, 500),
+          last_update: new Date().toISOString(),
+        };
+        await session.save();
+
+        throw councilError;
+      }
 
       // Update progress: Evaluating
       this.logger.log('💾 Saving session data...');

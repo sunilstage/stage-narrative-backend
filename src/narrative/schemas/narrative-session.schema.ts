@@ -75,12 +75,7 @@ export class NarrativeSession {
   content_analysis?: Record<string, any>;
 
   @Prop({ type: Object })
-  metadata?: {
-    generation_time?: number;
-    total_narratives?: number;
-    ai_model?: string;
-    error?: string;
-  };
+  metadata?: Record<string, any>; // Flexible metadata for tracking generation progress and errors
 
   @Prop()
   startedAt?: Date;

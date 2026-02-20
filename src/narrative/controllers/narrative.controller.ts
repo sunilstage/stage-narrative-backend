@@ -141,6 +141,7 @@ export class NarrativeController {
       // Step 2: Start generation in background using setImmediate
       setImmediate(async () => {
         try {
+          console.log(`🚀 [CONSOLE] Starting background generation for session: ${sessionId}`);
           this.logger.log(`🚀 Starting background generation for session: ${sessionId}`);
           await this.narrativeService.generateNarratives(
             contentId,
@@ -148,8 +149,10 @@ export class NarrativeController {
             stakeholderFeedback,
             session,
           );
+          console.log(`✅ [CONSOLE] Generation completed: sessionId=${sessionId}`);
           this.logger.log(`✅ Generation completed: sessionId=${sessionId}`);
         } catch (error) {
+          console.error(`❌ [CONSOLE] Background generation failed:`, error);
           this.logger.error(`❌ Background generation failed: ${error.message}`, error.stack);
         }
       });

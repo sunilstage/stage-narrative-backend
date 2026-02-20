@@ -99,16 +99,22 @@ export class AudienceCouncilService {
         .replace('{narrative}', narrative);
 
       try {
+        console.log(`👤 [AUDIENCE] Evaluating with ${persona.roleName} (${persona.roleId})...`);
+
         const response = await this.anthropicService.createMessage({
           messages: [{ role: 'user', content: evalPrompt }],
           max_tokens: 1200,
           temperature: 0.9,
           system: persona.systemInstruction,
+          timeoutMs: 60000, // 1 minute timeout per persona
         });
 
         evaluations[persona.roleId] =
           this.anthropicService.parseJSONResponse<PersonaEvaluation>(response);
+
+        console.log(`✅ [AUDIENCE] ${persona.roleName} evaluated (score: ${evaluations[persona.roleId].score})`);
       } catch (error) {
+        console.error(`❌ [AUDIENCE] Error with ${persona.roleId}: ${error.message}`);
         this.logger.error(
           `Error evaluating with persona ${persona.roleId}: ${error.message}`,
         );

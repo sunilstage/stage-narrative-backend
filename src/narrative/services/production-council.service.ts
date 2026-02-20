@@ -380,13 +380,21 @@ Return as JSON:
 }
 `;
 
+    console.log('📡 [COUNCIL] Sending brainstorm request to Claude API...');
+    console.log(`📏 [COUNCIL] Prompt length: ${prompt.length} characters`);
+
     const response = await this.anthropicService.createMessage({
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 16000,
       temperature: 0.9,
+      timeoutMs: 240000, // 4 minute timeout for large brainstorm
     });
 
-    return this.anthropicService.parseJSONResponse<BrainstormResult>(response);
+    console.log('🎯 [COUNCIL] Claude response received, parsing JSON...');
+    const result = this.anthropicService.parseJSONResponse<BrainstormResult>(response);
+    console.log(`✅ [COUNCIL] Parsed ${result.narratives_created?.length || 0} narratives`);
+
+    return result;
   }
 
   // ============================================================================
