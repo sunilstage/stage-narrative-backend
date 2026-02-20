@@ -164,11 +164,10 @@ export class NarrativeController {
     @Param('id') contentId: string,
     @Body() responses: any,
   ) {
-    const content = await this.narrativeService.findOne(contentId);
-
     // Update content with stakeholder responses
-    content.stakeholder_responses = responses;
-    await content.save();
+    await this.narrativeService.update(contentId, {
+      stakeholder_responses: responses,
+    } as any);
 
     return {
       message: 'Stakeholder responses saved successfully',
