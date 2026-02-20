@@ -131,7 +131,7 @@ export class NarrativeController {
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Upload PDF and extract text (placeholder)' })
   @ApiResponse({ status: 200, description: 'PDF uploaded successfully' })
-  async uploadPDF(@UploadedFile() file: Express.Multer.File) {
+  async uploadPDF(@UploadedFile() file: any) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
