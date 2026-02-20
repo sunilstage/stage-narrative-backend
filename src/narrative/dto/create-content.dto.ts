@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsObject, IsNotEmpty } from 'class-validator';
 
 /**
  * Create Content DTO
@@ -6,11 +6,12 @@ import { IsString, IsOptional, IsNumber, IsObject } from 'class-validator';
  */
 export class CreateContentDto {
   @IsString()
+  @IsNotEmpty()
   title: string;
 
   @IsString()
-  @IsOptional()
-  genre?: string;
+  @IsNotEmpty()
+  genre: string;
 
   @IsNumber()
   @IsOptional()
