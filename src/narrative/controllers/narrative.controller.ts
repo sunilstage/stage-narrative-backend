@@ -42,13 +42,8 @@ export class NarrativeController {
     @Query('genre') genre?: string,
     @Query('status') status?: string,
   ) {
-    const options = {
-      page: page || 1,
-      limit: limit || 20,
-      genre,
-      status,
-    };
-    return this.narrativeService.findAll(options);
+    // Note: Pagination and filtering not yet implemented in service
+    return this.narrativeService.findAll();
   }
 
   @Get('content/:id')
@@ -83,17 +78,16 @@ export class NarrativeController {
   }
 
   @Post('content/:id/generate')
-  @HttpCode(HttpStatus.ACCEPTED)
-  @ApiOperation({ summary: 'Generate marketing narratives (async via BullMQ)' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate marketing narratives (synchronous)' })
   @ApiParam({ name: 'id', type: String, description: 'Content ID' })
   @ApiResponse({
-    status: 202,
-    description: 'Generation job queued successfully',
+    status: 200,
+    description: 'Generation completed successfully',
     schema: {
       properties: {
         sessionId: { type: 'string' },
-        jobId: { type: 'string' },
-        status: { type: 'string', example: 'processing' },
+        status: { type: 'string', example: 'completed' },
       },
     },
   })
@@ -102,17 +96,16 @@ export class NarrativeController {
     @Param('id') contentId: string,
     @Body() dto: GenerateNarrativesDto,
   ) {
-    const result = await this.narrativeService.generateNarratives(
+    const session = await this.narrativeService.generateNarratives(
       contentId,
       dto.round || 1,
       dto.stakeholderResponses,
     );
 
     return {
-      sessionId: result.session._id.toString(),
-      jobId: result.job.id,
-      status: 'processing',
-      message: 'Narrative generation started. Use sessionId to poll for results.',
+      sessionId: session._id.toString(),
+      status: session.status,
+      message: 'Narrative generation completed successfully.',
     };
   }
 

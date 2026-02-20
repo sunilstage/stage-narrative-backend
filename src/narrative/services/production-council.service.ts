@@ -227,7 +227,7 @@ Show how the discussion incorporates Round 1 learnings and stakeholder insights.
     if (contentAnalysis?.primary_conflict) {
       const primary = contentAnalysis.primary_conflict;
       const secondary = contentAnalysis.secondary_conflicts || [];
-      const thematic = contentAnalysis.thematic_core || {};
+      const thematic = (contentAnalysis as any).thematic_core || {};
 
       conflictSection = `
 ═══════════════════════════════════════════════════════════════
@@ -244,7 +244,7 @@ MARKETING ANGLE:
 ${primary.marketing_angle || 'Focus on stakes and tension'}
 
 THEMATIC CORE:
-${thematic.central_question || 'Not specified'}
+${(thematic as any).central_question || 'Not specified'}
 
 SECONDARY CONFLICTS (for context):
 ${secondary

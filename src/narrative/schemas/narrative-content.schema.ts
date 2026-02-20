@@ -11,6 +11,9 @@ export type NarrativeContentDocument = NarrativeContent & Document;
 // Sub-schemas for nested objects
 export class Conflict {
   @Prop({ required: true })
+  conflict_id: string;
+
+  @Prop({ required: true })
   statement: string;
 
   @Prop({ required: true })
@@ -28,6 +31,9 @@ export class Conflict {
 
 export class PrimaryConflict {
   @Prop({ required: true })
+  conflict_id: string;
+
+  @Prop({ required: true })
   statement: string;
 
   @Prop({ required: true })
@@ -35,6 +41,12 @@ export class PrimaryConflict {
 
   @Prop({ required: true })
   reasoning: string;
+
+  @Prop({ required: true })
+  why_this_is_primary: string;
+
+  @Prop({ required: true })
+  marketing_angle: string;
 
   @Prop()
   category?: string;

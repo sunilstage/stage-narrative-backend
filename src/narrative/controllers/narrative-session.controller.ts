@@ -8,15 +8,12 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { NarrativeService } from '../services/narrative.service';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 
 @Controller('narrative')
 @ApiTags('Narrative Sessions')
 export class NarrativeSessionController {
   constructor(
     private readonly narrativeService: NarrativeService,
-    @InjectQueue('narrative-generation') private narrativeQueue: Queue,
   ) {}
 
   @Get('content/:id/sessions/:sessionId')
@@ -40,7 +37,7 @@ export class NarrativeSessionController {
     @Param('id') contentId: string,
     @Param('sessionId') sessionId: string,
   ) {
-    // Get session data
+    // Get session data (synchronous - no job queue)
     const sessionData = await this.narrativeService.getSession(
       contentId,
       sessionId,
@@ -50,65 +47,33 @@ export class NarrativeSessionController {
       throw new NotFoundException('Session not found');
     }
 
-    // Get job status from BullMQ
-    let jobStatus = null;
-    let jobProgress = 0;
-
-    if (sessionData.session.job_id) {
-      try {
-        const job = await this.narrativeQueue.getJob(sessionData.session.job_id);
-        if (job) {
-          jobStatus = await job.getState();
-          jobProgress = job.progress as number || 0;
-        }
-      } catch (error) {
-        // Job might be cleaned up already
-        console.warn('Could not fetch job status:', error.message);
-      }
-    }
-
-    return {
-      session: sessionData.session,
-      candidates: sessionData.candidates,
-      status: jobStatus || sessionData.session.status,
-      progress: jobProgress || sessionData.session.progress || 0,
-    };
+    return sessionData;
   }
 
   @Get('sessions/:sessionId/status')
-  @ApiOperation({ summary: 'Get job status and progress' })
-  @ApiParam({ name: 'sessionId', type: String, description: 'Session ID (also job ID)' })
+  @ApiOperation({ summary: 'Get session status and progress' })
+  @ApiParam({ name: 'sessionId', type: String, description: 'Session ID' })
   @ApiResponse({
     status: 200,
-    description: 'Job status',
+    description: 'Session status',
     schema: {
       properties: {
         status: { type: 'string', example: 'completed' },
         progress: { type: 'number', example: 100 },
-        result: { type: 'object' },
       },
     },
   })
   async getJobStatus(@Param('sessionId') sessionId: string) {
-    try {
-      const job = await this.narrativeQueue.getJob(sessionId);
+    const session = await this.narrativeService.findSessionById(sessionId);
 
-      if (!job) {
-        throw new NotFoundException('Job not found');
-      }
-
-      const state = await job.getState();
-      const progress = (job.progress as number) || 0;
-
-      return {
-        status: state,
-        progress,
-        result: state === 'completed' ? await job.returnvalue : null,
-        failedReason: state === 'failed' ? job.failedReason : null,
-      };
-    } catch (error) {
-      throw new NotFoundException('Job not found or expired');
+    if (!session) {
+      throw new NotFoundException('Session not found');
     }
+
+    return {
+      status: session.status,
+      progress: session.progress || 0,
+    };
   }
 
   @Get('sessions/:sessionId/candidates')

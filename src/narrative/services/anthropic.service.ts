@@ -66,7 +66,7 @@ export class AnthropicService {
    * Create a message using Claude API
    */
   async createMessage(params: {
-    messages: Array<{ role: string; content: string }>;
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>;
     max_tokens?: number;
     temperature?: number;
     system?: string;

@@ -173,8 +173,8 @@ export class NarrativeService {
         target_audience: content.targetAudience,
         summary: content.summary,
         script: content.script,
-        themes: content.themes,
-        tone: content.tone,
+        themes: content.content_analysis?.themes || [],
+        tone: content.genre, // Use genre as tone approximation
       };
 
       // Prepare round context if Round 2
@@ -246,7 +246,13 @@ export class NarrativeService {
 
       // Store council discussion
       session.council_conversation = {
-        conversation: brainstormResult.conversation,
+        conversation: brainstormResult.conversation.map((msg: any) => ({
+          speaker: msg.speaker,
+          role: 'council_member', // Default role for all council members
+          message: msg.message,
+          phase: msg.phase,
+          timestamp: new Date(),
+        })),
         narratives_created: brainstormResult.narratives_created.map(
           (n: any) => n.narrative,
         ),
@@ -359,5 +365,12 @@ export class NarrativeService {
       .find({ content_id: new Types.ObjectId(contentId) })
       .sort({ createdAt: -1 })
       .exec();
+  }
+
+  /**
+   * Find session by ID only
+   */
+  async findSessionById(sessionId: string): Promise<NarrativeSession | null> {
+    return this.sessionModel.findById(new Types.ObjectId(sessionId)).exec();
   }
 }
