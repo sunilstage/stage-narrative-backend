@@ -129,23 +129,30 @@ export class NarrativeController {
   @Post('upload-pdf')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload PDF and extract text (placeholder)' })
-  @ApiResponse({ status: 200, description: 'PDF uploaded successfully' })
+  @ApiOperation({ summary: 'Upload PDF and extract text' })
+  @ApiResponse({ status: 200, description: 'PDF uploaded and text extracted successfully' })
   async uploadPDF(@UploadedFile() file: any) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
 
-    // For now, return a placeholder response
-    // Full PDF text extraction would require pdf-parse or similar library
-    return {
-      success: true,
-      filename: file.originalname,
-      size: file.size,
-      message: 'PDF uploaded. Text extraction not yet implemented. Please paste script manually.',
-      extracted_text: '',
-      pages: 0,
-      character_count: 0,
-    };
+    try {
+      // Import pdf-parse dynamically
+      const pdfParse = require('pdf-parse');
+
+      // Extract text from PDF
+      const pdfData = await pdfParse(file.buffer);
+
+      return {
+        success: true,
+        filename: file.originalname,
+        pages: pdfData.numpages,
+        extracted_text: pdfData.text,
+        character_count: pdfData.text.length,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new BadRequestException(`Failed to parse PDF: ${errorMessage}`);
+    }
   }
 }
