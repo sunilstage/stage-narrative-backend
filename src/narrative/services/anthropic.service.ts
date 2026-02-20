@@ -88,7 +88,9 @@ export class AnthropicService {
       );
 
       this.logger.log('✅ Claude API response received');
-      this.logger.debug(`Response length: ${response.content[0]?.text?.length || 0} chars`);
+      const firstContent = response.content[0];
+      const textLength = firstContent && 'text' in firstContent ? firstContent.text?.length || 0 : 0;
+      this.logger.debug(`Response length: ${textLength} chars`);
       this.logger.debug(`Usage: input=${response.usage?.input_tokens}, output=${response.usage?.output_tokens}`);
 
       return response;

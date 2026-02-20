@@ -38,7 +38,7 @@ export class NarrativeController {
 
     const result = await this.narrativeService.create(createContentDto);
 
-    this.logger.log(`✅ Content created: ID=${result._id}`);
+    this.logger.log(`✅ Content created: ID=${(result as any)._id}`);
     return result;
   }
 
