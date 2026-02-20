@@ -15,7 +15,7 @@ interface ContentInfo {
   title?: string;
   genre?: string;
   runtime?: number;
-  target_audience?: string;
+  targetAudience?: string;
   summary?: string;
   script?: string;
   themes?: string;
@@ -117,7 +117,7 @@ CONTENT INFORMATION
 ═══════════════════════════════════════════════════════════════
 Genre: ${content.genre || 'Not specified'}
 Runtime: ${content.runtime || 'Not specified'} minutes
-Target Audience: ${content.target_audience || 'Not specified'}
+Target Audience: ${content.targetAudience || 'Not specified'}
 Themes: ${content.themes || 'Not specified'}
 Tone: ${content.tone || 'Not specified'}
 

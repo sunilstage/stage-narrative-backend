@@ -16,7 +16,7 @@ interface ContentInfo {
   title?: string;
   genre?: string;
   runtime?: number;
-  target_audience?: string;
+  targetAudience?: string;
   summary?: string;
   script?: string;
   themes?: string;

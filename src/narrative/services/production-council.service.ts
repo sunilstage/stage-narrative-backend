@@ -21,7 +21,7 @@ interface ContentInfo {
   title?: string;
   genre?: string;
   runtime?: number;
-  target_audience?: string;
+  targetAudience?: string;
   summary?: string;
   script?: string;
   themes?: string;
@@ -276,7 +276,7 @@ CONTENT TO CREATE NARRATIVES FOR:
 
 Genre: ${content.genre || 'Not specified'}
 Runtime: ${content.runtime || 'Not specified'} minutes
-Target Audience: ${content.target_audience || 'General'} (HINDI-SPEAKING)
+Target Audience: ${content.targetAudience || 'General'} (HINDI-SPEAKING)
 Themes: ${content.themes || 'Not specified'}
 Tone: ${content.tone || 'Not specified'}
 
