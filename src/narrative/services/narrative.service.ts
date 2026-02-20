@@ -173,7 +173,7 @@ export class NarrativeService {
         target_audience: content.targetAudience,
         summary: content.summary,
         script: content.script,
-        themes: content.content_analysis?.themes || [],
+        themes: content.content_analysis?.themes?.join(', ') || '',
         tone: content.genre, // Use genre as tone approximation
       };
 

@@ -96,14 +96,19 @@ export class NarrativeController {
     @Param('id') contentId: string,
     @Body() dto: GenerateNarrativesDto,
   ) {
+    // Convert stakeholder responses array to feedback string if provided
+    const stakeholderFeedback = dto.stakeholderResponses
+      ? JSON.stringify(dto.stakeholderResponses)
+      : undefined;
+
     const session = await this.narrativeService.generateNarratives(
       contentId,
       dto.round || 1,
-      dto.stakeholderResponses,
+      stakeholderFeedback,
     );
 
     return {
-      sessionId: session._id.toString(),
+      sessionId: (session as any)._id.toString(),
       status: session.status,
       message: 'Narrative generation completed successfully.',
     };
