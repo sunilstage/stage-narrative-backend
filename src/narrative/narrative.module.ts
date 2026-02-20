@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule } from '@nestjs/config';
 
 // Schemas
 import {
@@ -28,6 +29,7 @@ import { AnthropicService } from './services/anthropic.service';
 
 @Module({
   imports: [
+    ConfigModule,
     // Register Mongoose schemas
     MongooseModule.forFeature([
       { name: NarrativeContent.name, schema: NarrativeContentSchema },
