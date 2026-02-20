@@ -8,7 +8,11 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { NarrativeService } from '../services/narrative.service';
 import { CreateContentDto } from '../dto/create-content.dto';
@@ -120,5 +124,28 @@ export class NarrativeController {
   @ApiResponse({ status: 200, description: 'List of all sessions' })
   async getRounds(@Param('id') contentId: string) {
     return this.narrativeService.getContentSessions(contentId);
+  }
+
+  @Post('upload-pdf')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload PDF and extract text (placeholder)' })
+  @ApiResponse({ status: 200, description: 'PDF uploaded successfully' })
+  async uploadPDF(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    // For now, return a placeholder response
+    // Full PDF text extraction would require pdf-parse or similar library
+    return {
+      success: true,
+      filename: file.originalname,
+      size: file.size,
+      message: 'PDF uploaded. Text extraction not yet implemented. Please paste script manually.',
+      extracted_text: '',
+      pages: 0,
+      character_count: 0,
+    };
   }
 }
