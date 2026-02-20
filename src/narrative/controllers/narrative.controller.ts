@@ -138,8 +138,9 @@ export class NarrativeController {
       this.logger.log(`✅ Generation completed: sessionId=${(session as any)._id}`);
 
       return {
-        sessionId: (session as any)._id.toString(),
+        session_id: (session as any)._id.toString(),
         status: session.status,
+        candidates_generated: 10,
         message: 'Narrative generation completed successfully.',
       };
     } catch (error) {
@@ -228,10 +229,17 @@ export class NarrativeController {
   async getStakeholderResponses(@Param('id') contentId: string) {
     const content = await this.narrativeService.findOne(contentId);
 
+    const responses = content.stakeholder_responses || null;
+    const hasResponses = !!(
+      responses &&
+      Array.isArray(responses) &&
+      responses.length > 0
+    );
+
     return {
       content_id: contentId,
-      responses: content.stakeholder_responses || null,
-      has_responses: !!content.stakeholder_responses,
+      responses: responses,
+      has_responses: hasResponses,
     };
   }
 }
