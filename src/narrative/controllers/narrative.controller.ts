@@ -155,4 +155,38 @@ export class NarrativeController {
       throw new BadRequestException(`Failed to parse PDF: ${errorMessage}`);
     }
   }
+
+  @Post('content/:id/stakeholder-responses')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Save stakeholder interview responses' })
+  @ApiResponse({ status: 200, description: 'Responses saved successfully' })
+  async saveStakeholderResponses(
+    @Param('id') contentId: string,
+    @Body() responses: any,
+  ) {
+    const content = await this.narrativeService.findOne(contentId);
+
+    // Update content with stakeholder responses
+    content.stakeholder_responses = responses;
+    await content.save();
+
+    return {
+      message: 'Stakeholder responses saved successfully',
+      content_id: contentId,
+      responses: responses,
+    };
+  }
+
+  @Get('content/:id/stakeholder-responses')
+  @ApiOperation({ summary: 'Get stakeholder interview responses' })
+  @ApiResponse({ status: 200, description: 'Responses retrieved successfully' })
+  async getStakeholderResponses(@Param('id') contentId: string) {
+    const content = await this.narrativeService.findOne(contentId);
+
+    return {
+      content_id: contentId,
+      responses: content.stakeholder_responses || null,
+      has_responses: !!content.stakeholder_responses,
+    };
+  }
 }
