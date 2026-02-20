@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
@@ -22,6 +23,8 @@ import { GenerateNarrativesDto } from '../dto/generate-narratives.dto';
 @Controller('narrative')
 @ApiTags('Narrative Engine')
 export class NarrativeController {
+  private readonly logger = new Logger(NarrativeController.name);
+
   constructor(private readonly narrativeService: NarrativeService) {}
 
   @Post('content')
@@ -30,7 +33,13 @@ export class NarrativeController {
   @ApiResponse({ status: 201, description: 'Content created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   async createContent(@Body() createContentDto: CreateContentDto) {
-    return this.narrativeService.create(createContentDto);
+    this.logger.log(`📝 Creating content: ${createContentDto.title}`);
+    this.logger.debug(`Content data: ${JSON.stringify(createContentDto)}`);
+
+    const result = await this.narrativeService.create(createContentDto);
+
+    this.logger.log(`✅ Content created: ID=${result._id}`);
+    return result;
   }
 
   @Get('content')
@@ -56,7 +65,12 @@ export class NarrativeController {
   @ApiResponse({ status: 200, description: 'Content found' })
   @ApiResponse({ status: 404, description: 'Content not found' })
   async getContent(@Param('id') id: string) {
-    return this.narrativeService.findOneWithSessions(id);
+    this.logger.log(`🔍 Fetching content: ID=${id}`);
+
+    const result = await this.narrativeService.findOneWithSessions(id);
+
+    this.logger.log(`✅ Content retrieved: ID=${id}`);
+    return result;
   }
 
   @Post('content/:id')
@@ -78,7 +92,11 @@ export class NarrativeController {
   @ApiResponse({ status: 204, description: 'Content deleted successfully' })
   @ApiResponse({ status: 404, description: 'Content not found' })
   async deleteContent(@Param('id') id: string) {
+    this.logger.log(`🗑️ Deleting content: ID=${id}`);
+
     await this.narrativeService.delete(id);
+
+    this.logger.log(`✅ Content deleted: ID=${id}`);
   }
 
   @Post('content/:id/generate')
@@ -100,22 +118,34 @@ export class NarrativeController {
     @Param('id') contentId: string,
     @Body() dto: GenerateNarrativesDto,
   ) {
-    // Convert stakeholder responses array to feedback string if provided
-    const stakeholderFeedback = dto.stakeholderResponses
-      ? JSON.stringify(dto.stakeholderResponses)
-      : undefined;
+    this.logger.log(`🎬 Generation request: contentId=${contentId}, round=${dto.round || 1}`);
+    this.logger.debug(`Request body: ${JSON.stringify(dto)}`);
 
-    const session = await this.narrativeService.generateNarratives(
-      contentId,
-      dto.round || 1,
-      stakeholderFeedback,
-    );
+    try {
+      // Convert stakeholder responses array to feedback string if provided
+      const stakeholderFeedback = dto.stakeholderResponses
+        ? JSON.stringify(dto.stakeholderResponses)
+        : undefined;
 
-    return {
-      sessionId: (session as any)._id.toString(),
-      status: session.status,
-      message: 'Narrative generation completed successfully.',
-    };
+      this.logger.log(`📊 Stakeholder responses: ${stakeholderFeedback ? 'Provided' : 'None'}`);
+
+      const session = await this.narrativeService.generateNarratives(
+        contentId,
+        dto.round || 1,
+        stakeholderFeedback,
+      );
+
+      this.logger.log(`✅ Generation completed: sessionId=${(session as any)._id}`);
+
+      return {
+        sessionId: (session as any)._id.toString(),
+        status: session.status,
+        message: 'Narrative generation completed successfully.',
+      };
+    } catch (error) {
+      this.logger.error(`❌ Generation failed: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   @Get('content/:id/rounds')
@@ -133,8 +163,11 @@ export class NarrativeController {
   @ApiResponse({ status: 200, description: 'PDF uploaded and text extracted successfully' })
   async uploadPDF(@UploadedFile() file: any) {
     if (!file) {
+      this.logger.warn('⚠️ PDF upload attempted with no file');
       throw new BadRequestException('No file uploaded');
     }
+
+    this.logger.log(`📄 Processing PDF: ${file.originalname} (${file.size} bytes)`);
 
     try {
       // Import pdf-parse dynamically
@@ -142,6 +175,8 @@ export class NarrativeController {
 
       // Extract text from PDF
       const pdfData = await pdfParse(file.buffer);
+
+      this.logger.log(`✅ PDF processed: ${pdfData.numpages} pages, ${pdfData.text.length} characters`);
 
       return {
         success: true,
@@ -152,6 +187,7 @@ export class NarrativeController {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`❌ PDF parsing failed: ${errorMessage}`, error.stack);
       throw new BadRequestException(`Failed to parse PDF: ${errorMessage}`);
     }
   }
@@ -164,16 +200,26 @@ export class NarrativeController {
     @Param('id') contentId: string,
     @Body() responses: any,
   ) {
-    // Update content with stakeholder responses
-    await this.narrativeService.update(contentId, {
-      stakeholder_responses: responses,
-    } as any);
+    this.logger.log(`💾 Saving stakeholder responses: contentId=${contentId}`);
+    this.logger.debug(`Responses data: ${JSON.stringify(responses)}`);
 
-    return {
-      message: 'Stakeholder responses saved successfully',
-      content_id: contentId,
-      responses: responses,
-    };
+    try {
+      // Update content with stakeholder responses
+      await this.narrativeService.update(contentId, {
+        stakeholder_responses: responses,
+      } as any);
+
+      this.logger.log(`✅ Stakeholder responses saved: contentId=${contentId}`);
+
+      return {
+        message: 'Stakeholder responses saved successfully',
+        content_id: contentId,
+        responses: responses,
+      };
+    } catch (error) {
+      this.logger.error(`❌ Failed to save stakeholder responses: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   @Get('content/:id/stakeholder-responses')

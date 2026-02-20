@@ -53,12 +53,16 @@ export class NarrativeService {
    * Get single content by ID
    */
   async findOne(id: string): Promise<NarrativeContent> {
+    this.logger.log(`Finding content: ${id}`);
+
     const content = await this.contentModel.findById(id).exec();
 
     if (!content) {
+      this.logger.warn(`⚠️ Content not found: ${id}`);
       throw new NotFoundException(`Content with ID ${id} not found`);
     }
 
+    this.logger.log(`✅ Content found: ${content.title}`);
     return content;
   }
 
@@ -87,6 +91,9 @@ export class NarrativeService {
    * Create new content
    */
   async create(createContentDto: CreateContentDto): Promise<NarrativeContent> {
+    this.logger.log(`Creating content: ${createContentDto.title}`);
+    this.logger.debug(`Full DTO: ${JSON.stringify(createContentDto)}`);
+
     const content = new this.contentModel({
       title: createContentDto.title,
       genre: createContentDto.genre,
@@ -102,7 +109,10 @@ export class NarrativeService {
       status: 'draft',
     });
 
-    return content.save();
+    const saved = await content.save();
+    this.logger.log(`✅ Content saved to DB: ${saved._id}`);
+
+    return saved;
   }
 
   /**
@@ -143,14 +153,22 @@ export class NarrativeService {
     round: number = 1,
     stakeholderFeedback?: string,
   ): Promise<NarrativeSession> {
-    this.logger.log(
-      `Starting narrative generation for content ${contentId}, round ${round}`,
-    );
+    this.logger.log(`🎬 Starting generation: contentId=${contentId}, round=${round}`);
 
     // Fetch content
+    this.logger.log('📖 Fetching content...');
     const content = await this.findOne(contentId);
+    this.logger.log(`✅ Content retrieved: ${content.title}`);
+
+    // Check for stakeholder responses
+    if ((content as any).stakeholder_responses) {
+      this.logger.log(`📋 Stakeholder responses found: ${(content as any).stakeholder_responses.length} entries`);
+    } else {
+      this.logger.warn('⚠️ No stakeholder responses found');
+    }
 
     // Create session
+    this.logger.log('💾 Creating session...');
     const session = new this.sessionModel({
       content_id: new Types.ObjectId(contentId),
       round_number: round,
@@ -159,9 +177,11 @@ export class NarrativeService {
       startedAt: new Date(),
     });
     await session.save();
+    this.logger.log(`✅ Session created: ${session._id}`);
 
     try {
       // Update progress: Content analysis
+      this.logger.log('📊 Analyzing content...');
       session.progress = 10;
       await session.save();
 
@@ -218,6 +238,7 @@ export class NarrativeService {
         : undefined;
 
       // Update progress: Brainstorming
+      this.logger.log('🏗️ Running Production Council...');
       session.progress = 30;
       await session.save();
 
@@ -231,7 +252,10 @@ export class NarrativeService {
           content.content_analysis, // Pass existing analysis if available
         );
 
+      this.logger.log(`✅ Narratives created: ${evaluations.length} narratives`);
+
       // Update progress: Evaluating
+      this.logger.log('💾 Saving session data...');
       session.progress = 70;
       await session.save();
 
@@ -290,9 +314,7 @@ export class NarrativeService {
       session.progress = 100;
       await session.save();
 
-      this.logger.log(
-        `Successfully generated ${evaluations.length} narratives for content ${contentId}`,
-      );
+      this.logger.log(`✅ Generation completed successfully: ${session._id}`);
 
       // Return session with candidates
       const finalSession = await this.sessionModel

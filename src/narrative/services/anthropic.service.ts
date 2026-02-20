@@ -71,15 +71,31 @@ export class AnthropicService {
     temperature?: number;
     system?: string;
   }): Promise<any> {
-    return this.callWithRetry(() =>
-      this.client.messages.create({
-        model: this.model,
-        max_tokens: params.max_tokens || 4000,
-        temperature: params.temperature || 0.7,
-        system: params.system,
-        messages: params.messages,
-      }),
-    );
+    this.logger.log('🤖 Calling Claude API...');
+    this.logger.debug(`System prompt length: ${params.system?.length || 0} chars`);
+    this.logger.debug(`User prompt length: ${params.messages[0]?.content?.length || 0} chars`);
+    this.logger.debug(`Options: max_tokens=${params.max_tokens || 4000}, temperature=${params.temperature || 0.7}`);
+
+    try {
+      const response = await this.callWithRetry(() =>
+        this.client.messages.create({
+          model: this.model,
+          max_tokens: params.max_tokens || 4000,
+          temperature: params.temperature || 0.7,
+          system: params.system,
+          messages: params.messages,
+        }),
+      );
+
+      this.logger.log('✅ Claude API response received');
+      this.logger.debug(`Response length: ${response.content[0]?.text?.length || 0} chars`);
+      this.logger.debug(`Usage: input=${response.usage?.input_tokens}, output=${response.usage?.output_tokens}`);
+
+      return response;
+    } catch (error) {
+      this.logger.error(`❌ Claude API call failed: ${error.message}`, error.stack);
+      throw new Error(`Failed to call Claude API: ${error.message}`);
+    }
   }
 
   /**
