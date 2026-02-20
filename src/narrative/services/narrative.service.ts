@@ -150,7 +150,7 @@ export class NarrativeService {
   async createSession(
     contentId: string,
     round: number = 1,
-  ): Promise<NarrativeSession> {
+  ): Promise<NarrativeSessionDocument> {
     this.logger.log('💾 Creating session...');
     const session = new this.sessionModel({
       content_id: new Types.ObjectId(contentId),
@@ -172,8 +172,8 @@ export class NarrativeService {
     contentId: string,
     round: number = 1,
     stakeholderFeedback?: string,
-    existingSession?: NarrativeSession,
-  ): Promise<NarrativeSession> {
+    existingSession?: NarrativeSessionDocument,
+  ): Promise<NarrativeSessionDocument> {
     this.logger.log(`🎬 Starting generation: contentId=${contentId}, round=${round}`);
 
     // Fetch content
