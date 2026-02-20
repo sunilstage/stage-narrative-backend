@@ -138,16 +138,20 @@ export class NarrativeController {
       const sessionId = (session as any)._id.toString();
       this.logger.log(`✅ Session created: ${sessionId}`);
 
-      // Step 2: Start generation in background (fire and forget)
-      this.narrativeService.generateNarratives(
-        contentId,
-        dto.round || 1,
-        stakeholderFeedback,
-        session, // Pass the existing session
-      ).then(() => {
-        this.logger.log(`✅ Generation completed: sessionId=${sessionId}`);
-      }).catch(error => {
-        this.logger.error(`❌ Background generation failed: ${error.message}`, error.stack);
+      // Step 2: Start generation in background using setImmediate
+      setImmediate(async () => {
+        try {
+          this.logger.log(`🚀 Starting background generation for session: ${sessionId}`);
+          await this.narrativeService.generateNarratives(
+            contentId,
+            dto.round || 1,
+            stakeholderFeedback,
+            session,
+          );
+          this.logger.log(`✅ Generation completed: sessionId=${sessionId}`);
+        } catch (error) {
+          this.logger.error(`❌ Background generation failed: ${error.message}`, error.stack);
+        }
       });
 
       // Step 3: Return immediately with session ID
