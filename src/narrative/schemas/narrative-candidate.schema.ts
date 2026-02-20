@@ -119,12 +119,12 @@ export class NarrativeCandidate {
   demographic_breakdown?: DemographicBreakdown;
 
   // Production Council evaluations (7 personas)
-  @Prop({ type: Map, of: CouncilEvaluation })
-  production_council: Map<string, CouncilEvaluation>;
+  @Prop({ type: Object })
+  production_council: Record<string, any>;
 
   // Audience Council evaluations (8 personas)
-  @Prop({ type: Map, of: PersonaEvaluation })
-  audience_council: Map<string, PersonaEvaluation>;
+  @Prop({ type: Object })
+  audience_council: Record<string, any>;
 
   @Prop({ type: Object })
   metadata?: {
