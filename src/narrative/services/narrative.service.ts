@@ -145,6 +145,26 @@ export class NarrativeService {
   }
 
   /**
+   * Create a new session for narrative generation
+   */
+  async createSession(
+    contentId: string,
+    round: number = 1,
+  ): Promise<NarrativeSession> {
+    this.logger.log('💾 Creating session...');
+    const session = new this.sessionModel({
+      content_id: new Types.ObjectId(contentId),
+      round_number: round,
+      status: 'processing',
+      progress: 0,
+      startedAt: new Date(),
+    });
+    await session.save();
+    this.logger.log(`✅ Session created: ${session._id}`);
+    return session;
+  }
+
+  /**
    * Generate narratives for content
    * This is the main workflow that runs the evaluation engine
    */
@@ -152,6 +172,7 @@ export class NarrativeService {
     contentId: string,
     round: number = 1,
     stakeholderFeedback?: string,
+    existingSession?: NarrativeSession,
   ): Promise<NarrativeSession> {
     this.logger.log(`🎬 Starting generation: contentId=${contentId}, round=${round}`);
 
@@ -167,17 +188,8 @@ export class NarrativeService {
       this.logger.warn('⚠️ No stakeholder responses found');
     }
 
-    // Create session
-    this.logger.log('💾 Creating session...');
-    const session = new this.sessionModel({
-      content_id: new Types.ObjectId(contentId),
-      round_number: round,
-      status: 'processing',
-      progress: 0,
-      startedAt: new Date(),
-    });
-    await session.save();
-    this.logger.log(`✅ Session created: ${session._id}`);
+    // Use existing session or create new one
+    const session = existingSession || await this.createSession(contentId, round);
 
     try {
       // Update progress: Content analysis
