@@ -6,6 +6,10 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Increase body size limit for large scripts/PDFs
+  app.use(require('express').json({ limit: '50mb' }));
+  app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
+
   // Enable CORS
   app.enableCors({
     origin: '*', // In production, specify your frontend URL
