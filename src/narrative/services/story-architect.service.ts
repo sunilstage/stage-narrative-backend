@@ -86,6 +86,21 @@ interface ContentAnalysis {
   usps: string[];
   main_conflict?: string;
   thematic_question?: string;
+  // Enhanced content insights
+  title_alternatives?: string[];
+  high_drama_scenes?: Array<{
+    scene_description: string;
+    timestamp?: string;
+    emotional_peak: string;
+    marketing_potential: string;
+  }>;
+  similar_content_references?: Array<{
+    title: string;
+    platform?: string;
+    region?: string;
+    similarity_reason: string;
+    what_to_learn: string;
+  }>;
 }
 
 // ============================================================================
@@ -185,6 +200,20 @@ PHASE 6: MARKETING STRATEGY
 - TAGLINE OPTIONS: 2-3 options that center the conflict
 - POSITIONING: How this conflict differentiates from competitors
 
+PHASE 7: ENHANCED MARKETING INSIGHTS
+- TITLE ALTERNATIVES: 3-5 alternative title suggestions based on conflict, themes, and hooks
+- HIGH DRAMA SCENES: Identify 3-5 key high-impact scenes perfect for trailers/teasers
+  * Scene description
+  * Timestamp (if available)
+  * Emotional peak moment
+  * Marketing potential (why this scene sells)
+- SIMILAR CONTENT REFERENCES: 3-5 comparable titles from Indian/Global OTT
+  * Title name
+  * Platform (Netflix/Prime/Hotstar/etc)
+  * Region (Bollywood/Hollywood/Korean/etc)
+  * Why similar (themes, conflict, tone)
+  * What we can learn from their marketing
+
 ═══════════════════════════════════════════════════════════════
 RETURN AS JSON
 ═══════════════════════════════════════════════════════════════
@@ -260,7 +289,32 @@ RETURN AS JSON
 
   "logline": "One sentence capturing the primary conflict",
   "genre_positioning": "How to position this in market",
-  "usps": ["USP 1", "USP 2", "USP 3"]
+  "usps": ["USP 1", "USP 2", "USP 3"],
+
+  "title_alternatives": [
+    "Alternative Title 1",
+    "Alternative Title 2",
+    "Alternative Title 3"
+  ],
+
+  "high_drama_scenes": [
+    {
+      "scene_description": "Brief description of the scene",
+      "timestamp": "Scene location (e.g., 'Act 2 climax', 'Opening 5 mins')",
+      "emotional_peak": "The key emotional moment",
+      "marketing_potential": "Why this scene works for trailers/teasers"
+    }
+  ],
+
+  "similar_content_references": [
+    {
+      "title": "Content title",
+      "platform": "Netflix/Prime/Hotstar/etc",
+      "region": "Bollywood/Hollywood/Korean/etc",
+      "similarity_reason": "Why it's comparable",
+      "what_to_learn": "Marketing lessons from this content"
+    }
+  ]
 }
 
 Be thorough, strategic, and conflict-obsessed. The primary conflict you identify will guide ALL marketing narratives.
@@ -270,8 +324,8 @@ Be thorough, strategic, and conflict-obsessed. The primary conflict you identify
 
     const response = await this.anthropicService.createMessage({
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 6000,
-      timeoutMs: 120000, // 2 minute timeout for content analysis
+      max_tokens: 8000, // Increased for enhanced insights
+      timeoutMs: 180000, // 3 minute timeout for comprehensive analysis
     });
 
     console.log('✅ [ARCHITECT] Content analysis complete, parsing...');
