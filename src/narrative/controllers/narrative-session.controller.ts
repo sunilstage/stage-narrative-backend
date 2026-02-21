@@ -67,8 +67,11 @@ export class NarrativeSessionController {
     // Get candidates for this session
     const candidates = await this.narrativeService.getSessionCandidates(sessionId);
 
+    // Convert to plain object and add candidates
+    const sessionData = JSON.parse(JSON.stringify(session));
+
     return {
-      ...session.toObject(),
+      ...sessionData,
       candidates,
     };
   }
