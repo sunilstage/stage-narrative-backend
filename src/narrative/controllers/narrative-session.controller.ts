@@ -50,6 +50,29 @@ export class NarrativeSessionController {
     return sessionData;
   }
 
+  @Get('sessions/:sessionId')
+  @ApiOperation({ summary: 'Get full session data with candidates' })
+  @ApiParam({ name: 'sessionId', type: String, description: 'Session ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Full session data with candidates',
+  })
+  async getSessionById(@Param('sessionId') sessionId: string) {
+    const session = await this.narrativeService.findSessionById(sessionId);
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    // Get candidates for this session
+    const candidates = await this.narrativeService.getSessionCandidates(sessionId);
+
+    return {
+      ...session.toObject(),
+      candidates,
+    };
+  }
+
   @Get('sessions/:sessionId/status')
   @ApiOperation({ summary: 'Get session status and progress' })
   @ApiParam({ name: 'sessionId', type: String, description: 'Session ID' })
