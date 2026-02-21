@@ -244,66 +244,119 @@ export class NarrativeService {
         }
       }
 
-      // Check if we have stakeholder responses (Round 1 Part 2)
-      const stakeholderContext = (content as any).stakeholder_responses
+      // Check if we have stakeholder responses for Part 2
+      const hasStakeholderInput = !!(content as any).stakeholder_responses;
+      const stakeholderContext = hasStakeholderInput
         ? { stakeholder_responses: (content as any).stakeholder_responses }
         : undefined;
 
-      // Update progress: Brainstorming
-      console.log('🏗️ [GENERATION] Running Production Council...');
-      this.logger.log('🏗️ Running Production Council...');
+      // ==================================================================
+      // PART 1: AI-ONLY NARRATIVES (Pure Council Brainstorm)
+      // ==================================================================
+      console.log('🤖 [GENERATION] PART 1: AI-Only Narratives (5)');
+      this.logger.log('🤖 PART 1: AI-Only Narratives');
       session.progress = 30;
       session.metadata = {
         ...session.metadata,
-        last_step: 'production_council_start',
+        last_step: 'part1_ai_only_start',
         last_update: new Date().toISOString(),
       };
       await session.save();
-      console.log('✅ [GENERATION] Progress saved at 30%');
 
-      // Run evaluation engine with detailed error tracking
-      console.log('📞 [GENERATION] Calling evaluateAllCandidatesDeliberative...');
-      let evaluations: any[];
-      let brainstormResult: any;
+      let part1Evaluations: any[];
+      let part1Brainstorm: any;
       let contentAnalysis: any;
 
       try {
-        [evaluations, brainstormResult, contentAnalysis] =
+        [part1Evaluations, part1Brainstorm, contentAnalysis] =
           await this.productionCouncil.evaluateAllCandidatesDeliberative(
             contentInfo,
-            10, // Generate 10 candidates
+            5, // Part 1: 5 AI-only narratives
             roundContext,
-            stakeholderContext,
-            content.content_analysis, // Pass existing analysis if available
+            undefined, // NO stakeholder context in Part 1
+            content.content_analysis,
           );
 
-        console.log(`✅ [GENERATION] Narratives created: ${evaluations.length} narratives`);
-        this.logger.log(`✅ Narratives created: ${evaluations.length} narratives`);
-
-        // Update session with success
+        console.log(`✅ [GENERATION] Part 1 complete: ${part1Evaluations.length} AI-only narratives`);
+        session.progress = 50;
         session.metadata = {
           ...session.metadata,
-          last_step: 'production_council_complete',
-          narratives_count: evaluations.length,
+          last_step: 'part1_complete',
+          part1_count: part1Evaluations.length,
           last_update: new Date().toISOString(),
         };
         await session.save();
-      } catch (councilError) {
-        console.error('❌ [GENERATION] Production council failed:', councilError);
-        this.logger.error(`Production council error: ${councilError.message}`, councilError.stack);
-
-        // Update session with detailed error
+      } catch (error) {
+        console.error('❌ [GENERATION] Part 1 failed:', error);
         session.metadata = {
           ...session.metadata,
-          last_step: 'production_council_error',
-          error_message: councilError.message,
-          error_stack: councilError.stack?.substring(0, 500),
+          last_step: 'part1_error',
+          error_message: error.message,
           last_update: new Date().toISOString(),
         };
         await session.save();
-
-        throw councilError;
+        throw error;
       }
+
+      // ==================================================================
+      // PART 2: AI+HUMAN NARRATIVES (With Stakeholder Input)
+      // ==================================================================
+      console.log('🤝 [GENERATION] PART 2: AI+Human Narratives (5)');
+      this.logger.log('🤝 PART 2: AI+Human Narratives');
+      session.progress = 60;
+      session.metadata = {
+        ...session.metadata,
+        last_step: 'part2_ai_human_start',
+        last_update: new Date().toISOString(),
+      };
+      await session.save();
+
+      let part2Evaluations: any[];
+      let part2Brainstorm: any;
+
+      try {
+        [part2Evaluations, part2Brainstorm] =
+          await this.productionCouncil.evaluateAllCandidatesDeliberative(
+            contentInfo,
+            5, // Part 2: 5 AI+Human narratives
+            roundContext,
+            stakeholderContext, // WITH stakeholder context in Part 2
+            contentAnalysis, // Use analysis from Part 1
+          );
+
+        console.log(`✅ [GENERATION] Part 2 complete: ${part2Evaluations.length} AI+Human narratives`);
+        session.progress = 70;
+        session.metadata = {
+          ...session.metadata,
+          last_step: 'part2_complete',
+          part2_count: part2Evaluations.length,
+          last_update: new Date().toISOString(),
+        };
+        await session.save();
+      } catch (error) {
+        console.error('❌ [GENERATION] Part 2 failed:', error);
+        session.metadata = {
+          ...session.metadata,
+          last_step: 'part2_error',
+          error_message: error.message,
+          last_update: new Date().toISOString(),
+        };
+        await session.save();
+        throw error;
+      }
+
+      // Combine both parts
+      const evaluations = part1Evaluations.concat(part2Evaluations);
+      const brainstormResult = {
+        conversation: [...part1Brainstorm.conversation, ...part2Brainstorm.conversation],
+        narratives_created: [...part1Brainstorm.narratives_created, ...part2Brainstorm.narratives_created],
+        meeting_insights: [...(part1Brainstorm.meeting_insights || []), ...(part2Brainstorm.meeting_insights || [])],
+        part1_pure_ai: part1Brainstorm,
+        part2_ai_human: part2Brainstorm,
+      };
+
+      console.log(`✅ [GENERATION] Total narratives: ${evaluations.length} (${part1Evaluations.length} AI-only + ${part2Evaluations.length} AI+Human)`);
+      this.logger.log(`✅ Total: ${evaluations.length} narratives generated`)
 
       // Update progress: Evaluating
       this.logger.log('💾 Saving session data...');
@@ -338,8 +391,12 @@ export class NarrativeService {
       session.progress = 90;
       await session.save();
 
-      // Save candidates
-      for (const evaluation of evaluations) {
+      // Save candidates with correct generation_type
+      const part1Count = part1Evaluations.length;
+      for (let i = 0; i < evaluations.length; i++) {
+        const evaluation = evaluations[i];
+        const isAiOnly = i < part1Count;
+
         const candidate = new this.candidateModel({
           session_id: session._id,
           content_id: new Types.ObjectId(contentId),
@@ -353,10 +410,12 @@ export class NarrativeService {
           insights: evaluation.insights,
           conflicts: evaluation.conflicts,
           demographic_breakdown: evaluation.demographic_breakdown,
-          generation_type: 'deliberative',
+          generation_type: isAiOnly ? 'ai_only' : 'ai_human', // Set correct type based on part
           rank: evaluation.rank || 0,
         });
         await candidate.save();
+
+        console.log(`💾 Saved narrative ${i + 1}/${evaluations.length} (${candidate.generation_type}): "${evaluation.narrative.substring(0, 50)}..."`);
       }
 
       // Complete session
